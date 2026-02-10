@@ -1,553 +1,120 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Menu, X, ShoppingBag, Search, ArrowRight, ChevronDown } from 'lucide-react'
 
-// Sound utility using Web Audio API
-const useSound = () => {
-  const [soundEnabled, setSoundEnabled] = useState(false)
-  const audioContext = useRef(null)
+// SafeIcon component for dynamic icons
+const SafeIcon = ({ name, size = 24, className = '' }) => {
+  const icons = {
+    menu: Menu,
+    x: X,
+    'shopping-bag': ShoppingBag,
+    search: Search,
+    'arrow-right': ArrowRight,
+    'chevron-down': ChevronDown
+  }
 
-  useEffect(() => {
-    if (soundEnabled && !audioContext.current) {
-      audioContext.current = new (window.AudioContext || window.webkitAudioContext)()
-    }
-  }, [soundEnabled])
-
-  const playClick = useCallback(() => {
-    if (!soundEnabled || !audioContext.current) return
-
-    const oscillator = audioContext.current.createOscillator()
-    const gainNode = audioContext.current.createGain()
-
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.current.destination)
-
-    oscillator.frequency.setValueAtTime(800, audioContext.current.currentTime)
-    oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.current.currentTime + 0.1)
-
-    gainNode.gain.setValueAtTime(0.1, audioContext.current.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + 0.1)
-
-    oscillator.start(audioContext.current.currentTime)
-    oscillator.stop(audioContext.current.currentTime + 0.1)
-  }, [soundEnabled])
-
-  return { soundEnabled, setSoundEnabled, playClick }
-}
-
-// Preloader Component
-const Preloader = ({ onComplete }) => {
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setTimeout(onComplete, 500)
-          return 100
-        }
-        return prev + Math.random() * 15 + 5
-      })
-    }, 100)
-    return () => clearInterval(interval)
-  }, [onComplete])
-
-  return (
-    <motion.div
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed inset-0 bg-[#050505] z-[9999] flex items-center justify-center"
-    >
-      <div className="text-center">
-        <div className="font-mono text-6xl md:text-8xl font-light text-[#EBEBEB] mb-4">
-          {Math.min(Math.floor(progress), 100).toString().padStart(3, '0')}%
-        </div>
-        <div className="font-mono text-xs text-gray-500 tracking-[0.3em]">
-          SYSTEM_INITIALIZING
-        </div>
-        <div className="mt-8 w-48 h-px bg-gray-800 mx-auto overflow-hidden">
-          <motion.div
-            className="h-full bg-[#EBEBEB]"
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(progress, 100)}%` }}
-          />
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
-// Custom Crosshair Cursor
-const CustomCursor = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [hovering, setHovering] = useState(false)
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setPosition({ x: e.clientX, y: e.clientY })
-    }
-
-    const handleMouseOver = (e) => {
-      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('[data-cursor-hover]')) {
-        setHovering(true)
-      } else {
-        setHovering(false)
-      }
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseover', handleMouseOver)
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseover', handleMouseOver)
-    }
-  }, [])
-
-  return (
-    <>
-      <motion.div
-        className="fixed pointer-events-none z-[10000] cursor-invert"
-        animate={{
-          x: position.x - (hovering ? 24 : 12),
-          y: position.y - (hovering ? 24 : 12),
-          width: hovering ? 48 : 24,
-          height: hovering ? 48 : 24,
-        }}
-        transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
-          <motion.path
-            d="M12 2V22M2 12H22"
-            stroke="white"
-            strokeWidth="1"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 0.3 }}
-          />
-          <motion.circle
-            cx="12"
-            cy="12"
-            r="3"
-            stroke="white"
-            strokeWidth="1"
-            initial={{ scale: 0 }}
-            animate={{ scale: hovering ? 1 : 0 }}
-          />
-        </svg>
-      </motion.div>
-    </>
-  )
-}
-
-// Liquid Metal Background
-const LiquidMetalBackground = () => {
-  return (
-    <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 liquid-bg opacity-30" />
-      <motion.div
-        className="absolute inset-0"
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(100,100,100,0.3) 0%, transparent 50%)',
-        }}
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
-      {[...Array(5)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: Math.random() * 400 + 200,
-            height: Math.random() * 400 + 200,
-            background: 'radial-gradient(circle, rgba(150,150,150,0.2) 0%, transparent 70%)',
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            x: [0, Math.random() * 100 - 50],
-            y: [0, Math.random() * 100 - 50],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 10 + i * 2,
-            repeat: Infinity,
-            repeatType: "reverse",
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  )
+  const IconComponent = icons[name] || (() => null)
+  return <IconComponent size={size} className={className} />
 }
 
 // Product Data
 const products = [
   {
-    id: 'M-001',
-    name: 'TACTICAL OVERSHIRT',
+    id: 'HE-001',
+    name: 'LIQUID METAL JACKET',
+    price: '€1,250',
+    image: 'https://images.unsplash.com/photo-1551028712-42ad591ab6ce?w=800&q=80',
+    category: 'OUTERWEAR',
+    isNew: true
+  },
+  {
+    id: 'HE-002',
+    name: 'TECHNICAL TRENCH COAT',
+    price: '€980',
+    image: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800&q=80',
+    category: 'OUTERWEAR',
+    isNew: false
+  },
+  {
+    id: 'HE-003',
+    name: 'MODULAR UTILITY VEST',
     price: '€450',
-    material: 'Waxed Cotton / Titanium Fiber',
-    specs: ['Water-resistant', 'Modular pockets', 'Reflective seams'],
-    image: 'https://images.unsplash.com/photo-1551028712-42ad591ab6ce?w=600&q=80',
-    size: 'large',
+    image: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=800&q=80',
+    category: 'VEST',
+    isNew: true
   },
   {
-    id: 'M-002',
-    name: 'DECONSTRUCTED TRENCH',
-    price: '€890',
-    material: 'Raw Denim / Steel Thread',
-    specs: ['Asymmetric cut', 'Raw edges', 'Industrial hardware'],
-    image: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=600&q=80',
-    size: 'medium',
+    id: 'HE-004',
+    name: 'STRUCTURED BLAZER',
+    price: '€780',
+    image: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c0?w=800&q=80',
+    category: 'TAILORING',
+    isNew: false
   },
   {
-    id: 'M-003',
-    name: 'MODULAR VEST',
+    id: 'HE-005',
+    name: 'ASYMMETRIC SHIRT',
     price: '€320',
-    material: 'Technical Nylon / Rubber',
-    specs: ['Detachable panels', 'Hidden pockets', 'Compression fit'],
-    image: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=600&q=80',
-    size: 'small',
+    image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&q=80',
+    category: 'SHIRTS',
+    isNew: true
   },
   {
-    id: 'M-004',
-    name: 'BRUTALIST COAT',
-    price: '€1,200',
-    material: 'Heavy Wool / Carbon Fiber',
-    specs: ['Architectural shoulders', 'Exposed seams', 'Magnetic closures'],
-    image: 'https://images.unsplash.com/photo-1544923246-77307dd628b9?w=600&q=80',
-    size: 'large',
-  },
-  {
-    id: 'M-005',
-    name: 'UTILITY PANTS',
-    price: '€380',
-    material: 'Canvas / Kevlar Blend',
-    specs: ['Articulated knees', 'Cargo system', 'Reinforced stress points'],
-    image: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c0?w=600&q=80',
-    size: 'medium',
-  },
+    id: 'HE-006',
+    name: 'CARGO TROUSERS',
+    price: '€420',
+    image: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&q=80',
+    category: 'TROUSERS',
+    isNew: false
+  }
 ]
 
-// Product Card
-const ProductCard = ({ product, index, onClick, playClick }) => {
-  const [isHovered, setIsHovered] = useState(false)
-
-  const sizeClasses = {
-    small: 'col-span-1 row-span-1',
-    medium: 'col-span-1 md:col-span-1 row-span-2',
-    large: 'col-span-1 md:col-span-2 row-span-2',
-  }
-
-  return (
-    <motion.div
-      className={`${sizeClasses[product.size]} relative group`}
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      viewport={{ once: true }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      onClick={() => {
-        playClick()
-        onClick(product)
-      }}
-      data-cursor-hover
-    >
-      <div className="relative h-full min-h-[300px] md:min-h-[400px] overflow-hidden border border-gray-800 bg-[#0a0a0a]">
-        <motion.img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover grayscale contrast-125"
-          animate={{
-            scale: isHovered ? 1.05 : 1,
-            filter: isHovered ? 'grayscale(0%) contrast(1.1)' : 'grayscale(100%) contrast(1.25)',
-          }}
-          transition={{ duration: 0.4 }}
-        />
-
-        {/* Technical overlay */}
-        <div className="absolute top-2 left-2 font-mono text-[10px] text-gray-500">
-          {product.id}
-        </div>
-        <div className="absolute top-2 right-2 font-mono text-[10px] text-gray-500">
-          {product.material.split('/')[0]}
-        </div>
-
-        {/* Hover content */}
-        <motion.div
-          className="absolute inset-0 bg-black/80 flex flex-col justify-end p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h3 className="font-sans text-xl font-bold text-[#EBEBEB] mb-2 tracking-tight">
-            {product.name}
-          </h3>
-          <p className="font-mono text-xs text-gray-400 mb-4">{product.material}</p>
-          <div className="space-y-1 mb-4">
-            {product.specs.map((spec, i) => (
-              <div key={i} className="font-mono text-[10px] text-gray-500 flex items-center gap-2">
-                <span className="w-1 h-1 bg-gray-500 rounded-full" />
-                {spec}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="font-mono text-lg text-[#EBEBEB]">{product.price}</span>
-            <button className="px-4 py-2 border border-[#EBEBEB] text-[#EBEBEB] font-mono text-xs hover:bg-[#EBEBEB] hover:text-[#050505] transition-colors">
-              ADD TO CART
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    </motion.div>
-  )
-}
-
-// Product Detail Modal
-const ProductModal = ({ product, onClose, playClick }) => {
-  if (!product) return null
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9997] bg-[#050505]/95 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={() => {
-        playClick()
-        onClose()
-      }}
-    >
-      <motion.div
-        initial={{ scale: 0.9, y: 50 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 50 }}
-        className="bg-[#0a0a0a] border border-gray-800 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="grid md:grid-cols-2">
-          <div className="relative h-96 md:h-auto">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover grayscale"
-            />
-            <div className="absolute top-4 left-4 font-mono text-xs text-gray-400">
-              COORD: 45.5231°N, 122.6765°W
-            </div>
-          </div>
-          <div className="p-8">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="font-sans text-3xl font-bold text-[#EBEBEB] mb-2 tracking-tight">
-                  {product.name}
-                </h2>
-                <p className="font-mono text-sm text-gray-500">{product.id}</p>
-              </div>
-              <button
-                onClick={() => {
-                  playClick()
-                  onClose()
-                }}
-                className="text-gray-500 hover:text-[#EBEBEB] transition-colors"
-              >
-                <SafeIcon name="x" size={24} />
-              </button>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="font-mono text-xs text-gray-500 mb-2 uppercase tracking-widest">Material Composition</h3>
-              <p className="font-sans text-[#EBEBEB]">{product.material}</p>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="font-mono text-xs text-gray-500 mb-2 uppercase tracking-widest">Technical Specifications</h3>
-              <table className="w-full font-mono text-xs">
-                <tbody>
-                  {product.specs.map((spec, i) => (
-                    <tr key={i} className="border-b border-gray-800">
-                      <td className="py-2 text-gray-500">SPEC_{(i + 1).toString().padStart(2, '0')}</td>
-                      <td className="py-2 text-[#EBEBEB] text-right">{spec}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="font-mono text-xs text-gray-500 mb-2 uppercase tracking-widest">Dimensions</h3>
-              <div className="grid grid-cols-3 gap-4 font-mono text-xs text-[#EBEBEB]">
-                <div className="border border-gray-800 p-3 text-center">
-                  <div className="text-gray-500 mb-1">CHEST</div>
-                  <div>58cm</div>
-                </div>
-                <div className="border border-gray-800 p-3 text-center">
-                  <div className="text-gray-500 mb-1">LENGTH</div>
-                  <div>72cm</div>
-                </div>
-                <div className="border border-gray-800 p-3 text-center">
-                  <div className="text-gray-500 mb-1">SLEEVE</div>
-                  <div>65cm</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-6 border-t border-gray-800">
-              <span className="font-mono text-2xl text-[#EBEBEB]">{product.price}</span>
-              <button
-                className="relative overflow-hidden px-8 py-4 bg-[#EBEBEB] text-[#050505] font-mono text-sm font-bold group"
-                onClick={() => playClick()}
-              >
-                <span className="relative z-10 group-hover:text-[#EBEBEB] transition-colors">ACQUIRE</span>
-                <motion.div
-                  className="absolute inset-0 bg-gray-800"
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-// Marquee Text
-const Marquee = ({ text, reverse = false }) => {
-  return (
-    <div className="overflow-hidden whitespace-nowrap py-4 border-y border-gray-800">
-      <motion.div
-        className="flex gap-8"
-        animate={{ x: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: 'linear',
-        }}
-      >
-        {[...Array(4)].map((_, i) => (
-          <span key={i} className="font-sans text-4xl md:text-6xl font-bold text-gray-800 uppercase tracking-tight">
-            {text}
-          </span>
-        ))}
-      </motion.div>
-    </div>
-  )
-}
-
-// Technical Markers Overlay
-const TechnicalMarkers = () => {
-  const [time, setTime] = useState(new Date())
+// Navigation Component
+const Navigation = ({ menuOpen, setMenuOpen }) => {
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000)
-    return () => clearInterval(timer)
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   return (
     <>
-      <div className="fixed top-4 left-4 font-mono text-[10px] text-gray-500 z-50 hidden md:block">
-        <div>LOC: 40.7128°N, 74.0060°W</div>
-        <div>ALT: 00010m</div>
-        <div>HUM: 045%</div>
-      </div>
-      <div className="fixed top-4 right-4 font-mono text-[10px] text-gray-500 z-50 text-right hidden md:block">
-        <div>{time.toISOString().split('T')[0]}</div>
-        <div>{time.toLocaleTimeString('en-US', { hour12: false })}</div>
-        <div>SYS: ONLINE</div>
-      </div>
-      <div className="fixed bottom-4 left-4 font-mono text-[10px] text-gray-500 z-50 hidden md:block">
-        <div>MEM: 64TB</div>
-        <div>CPU: 0.04%</div>
-      </div>
-      <div className="fixed bottom-4 right-4 font-mono text-[10px] text-gray-500 z-50 text-right hidden md:block">
-        <div>FW26</div>
-        <div>COLLECTION</div>
-      </div>
-    </>
-  )
-}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-sm' : 'bg-transparent'}`}>
+        <div className="flex items-center justify-between px-6 py-4 md:px-8">
+          {/* Left Nav */}
+          <nav className="hidden md:flex items-center gap-8 text-xs tracking-widest font-medium">
+            <a href="#shop" className="link-underline hover:opacity-60 transition-opacity">SHOP</a>
+            <a href="#collections" className="link-underline hover:opacity-60 transition-opacity">COLLECTIONS</a>
+            <a href="#about" className="link-underline hover:opacity-60 transition-opacity">ABOUT</a>
+          </nav>
 
-// Main App
-function App() {
-  const [loading, setLoading] = useState(true)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState(null)
-  const { soundEnabled, setSoundEnabled, playClick } = useSound()
-  const { scrollYProgress } = useScroll()
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50])
-
-  // Smooth scroll handler
-  const scrollToSection = (id) => {
-    playClick()
-    const element = document.getElementById(id)
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
-    }
-    setMenuOpen(false)
-  }
-
-  return (
-    <div className="min-h-screen bg-[#050505] text-[#EBEBEB] font-sans selection:bg-[#EBEBEB] selection:text-[#050505]">
-      <CustomCursor />
-      <div className="grain" />
-      <TechnicalMarkers />
-
-      <AnimatePresence>
-        {loading && <Preloader onComplete={() => setLoading(false)} />}
-      </AnimatePresence>
-
-      {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-[9996] p-4 md:p-6 flex justify-between items-center mix-blend-difference">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="font-sans text-xl font-bold tracking-tighter"
-        >
-          MNLT
-        </motion.div>
-
-        <div className="flex items-center gap-6">
-          <button
-            onClick={() => {
-              playClick()
-              setSoundEnabled(!soundEnabled)
-            }}
-            className="font-mono text-[10px] tracking-widest text-gray-400 hover:text-[#EBEBEB] transition-colors"
-          >
-            SOUND: {soundEnabled ? 'ON' : 'OFF'}
+          {/* Logo */}
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="absolute left-1/2 -translate-x-1/2 text-lg md:text-xl font-semibold tracking-[0.2em]">
+            HELIOT EMIL
           </button>
 
-          <button
-            onClick={() => {
-              playClick()
-              setMenuOpen(!menuOpen)
-            }}
-            className="w-8 h-8 flex items-center justify-center relative"
-            data-cursor-hover
-          >
-            <motion.div
-              animate={{ rotate: menuOpen ? 45 : 0 }}
-              className="absolute w-4 h-px bg-[#EBEBEB]"
-            />
-            <motion.div
-              animate={{ rotate: menuOpen ? -45 : 0 }}
-              className="absolute w-4 h-px bg-[#EBEBEB]"
-            />
-          </button>
+          {/* Right Nav */}
+          <div className="flex items-center gap-6">
+            <button className="hidden md:block text-xs tracking-widest font-medium hover:opacity-60 transition-opacity">
+              SEARCH
+            </button>
+            <button className="hidden md:block text-xs tracking-widest font-medium hover:opacity-60 transition-opacity">
+              ACCOUNT
+            </button>
+            <button className="relative text-xs tracking-widest font-medium hover:opacity-60 transition-opacity">
+              BAG (0)
+            </button>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden p-2"
+            >
+              <SafeIcon name={menuOpen ? 'x' : 'menu'} size={20} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -555,224 +122,399 @@ function App() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ opacity: 0, x: '100%' }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: '100%' }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[9995] bg-[#050505] flex flex-col justify-center items-center gap-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 z-40 bg-white pt-20 px-6 md:hidden"
           >
-            {['ARCHIVE', 'COLLECTION', 'LABORATORY', 'CONTACT'].map((item, i) => (
-              <motion.button
-                key={item}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                onClick={() => scrollToSection(item.toLowerCase())}
-                className="font-sans text-4xl md:text-6xl font-bold tracking-tight hover:text-gray-500 transition-colors"
-                data-cursor-hover
-              >
-                {item}
-              </motion.button>
-            ))}
+            <nav className="flex flex-col gap-6 text-2xl font-light tracking-wide">
+              <a href="#shop" onClick={() => setMenuOpen(false)} className="border-b border-gray-100 pb-4">SHOP</a>
+              <a href="#collections" onClick={() => setMenuOpen(false)} className="border-b border-gray-100 pb-4">COLLECTIONS</a>
+              <a href="#about" onClick={() => setMenuOpen(false)} className="border-b border-gray-100 pb-4">ABOUT</a>
+              <a href="#account" onClick={() => setMenuOpen(false)} className="border-b border-gray-100 pb-4">ACCOUNT</a>
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>
+    </>
+  )
+}
 
-      {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <LiquidMetalBackground />
+// Hero Section
+const Hero = () => {
+  return (
+    <section className="relative h-screen w-full overflow-hidden bg-black">
+      {/* Video Background */}
+      <div className="absolute inset-0">
+        <img
+          src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1920&q=80"
+          alt="Collection"
+          className="w-full h-full object-cover opacity-80"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+      </div>
 
-        <motion.div
-          style={{ y }}
-          className="relative z-10 text-center px-4"
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col items-center justify-center text-white text-center px-6">
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+          className="text-xs tracking-[0.3em] mb-4 font-medium"
         >
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="font-mono text-xs tracking-[0.5em] text-gray-500 mb-6"
-          >
-            SYSTEM_OVERRIDE // FW26
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="font-sans text-5xl md:text-8xl lg:text-9xl font-bold tracking-tighter mb-6 leading-none"
-          >
-            MONOLITH
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="font-mono text-sm md:text-base text-gray-400 max-w-md mx-auto mb-12"
-          >
-            Исследование формы через функцию. Архитектурный крой. Тактильная холодность.
-          </motion.p>
-
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            onClick={() => scrollToSection('collection')}
-            className="group relative px-8 py-4 border border-[#EBEBEB] font-mono text-sm tracking-widest overflow-hidden"
-            data-cursor-hover
-          >
-            <span className="relative z-10 group-hover:text-[#050505] transition-colors">[ EXPLORE ARCHIVE ]</span>
-            <motion.div
-              className="absolute inset-0 bg-[#EBEBEB]"
-              initial={{ y: '100%' }}
-              whileHover={{ y: 0 }}
-              transition={{ duration: 0.3 }}
-            />
-          </motion.button>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 font-mono text-[10px] text-gray-500 animate-pulse"
+          SPRING/SUMMER 2025
+        </motion.p>
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.8 }}
+          className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight mb-6"
         >
-          SCROLL TO INITIATE
+          LIQUID UTILITY
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.8 }}
+          className="text-sm md:text-base text-white/80 max-w-md mb-8 font-light"
+        >
+          Industrial elegance meets fluid forms. Explore the new collection.
+        </motion.p>
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.8 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="group flex items-center gap-3 px-8 py-3 border border-white/30 hover:bg-white hover:text-black transition-all duration-300 text-xs tracking-widest"
+        >
+          EXPLORE COLLECTION
+          <SafeIcon name="arrow-right" size={14} className="group-hover:translate-x-1 transition-transform" />
+        </motion.button>
+      </div>
+
+      {/* Scroll Indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60"
+      >
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <SafeIcon name="chevron-down" size={20} />
         </motion.div>
-      </section>
+      </motion.div>
+    </section>
+  )
+}
 
-      {/* Marquee */}
-      <Marquee text="FW26 COLLECTION — ARCHITECTURAL FORMS — INDUSTRIAL ELEGANCE — " />
+// Product Card
+const ProductCard = ({ product, index }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      viewport={{ once: true }}
+      className="group cursor-pointer"
+    >
+      <div className="product-image-container relative aspect-[3/4] bg-gray-100 mb-4 overflow-hidden">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+        />
+        {product.isNew && (
+          <span className="absolute top-3 left-3 text-[10px] tracking-widest bg-black text-white px-2 py-1">
+            NEW
+          </span>
+        )}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
 
-      {/* Collection Section */}
-      <section id="collection" className="py-20 md:py-32 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="mb-16"
-          >
-            <h2 className="font-sans text-4xl md:text-6xl font-bold tracking-tight mb-4">ARCHIVE</h2>
-            <p className="font-mono text-sm text-gray-500">SELECTED WORKS // 2024-2026</p>
-          </motion.div>
+        {/* Quick Add */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          whileHover={{ opacity: 1, y: 0 }}
+          className="absolute bottom-4 left-4 right-4 bg-white text-black py-3 text-xs tracking-widest font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black hover:text-white"
+        >
+          QUICK VIEW
+        </motion.button>
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[300px] md:auto-rows-[400px]">
-            {products.map((product, index) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                index={index}
-                onClick={setSelectedProduct}
-                playClick={playClick}
-              />
-            ))}
-          </div>
+      <div className="space-y-1">
+        <p className="text-[10px] tracking-widest text-gray-500">{product.category}</p>
+        <h3 className="text-sm font-medium tracking-wide group-hover:opacity-60 transition-opacity">
+          {product.name}
+        </h3>
+        <p className="text-sm text-gray-600">{product.price}</p>
+      </div>
+    </motion.div>
+  )
+}
+
+// Collection Grid Section
+const CollectionGrid = () => {
+  return (
+    <section id="shop" className="py-20 md:py-32 px-6 md:px-12 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        <div>
+          <p className="text-xs tracking-widest text-gray-500 mb-2">SPRING/SUMMER 2025</p>
+          <h2 className="text-3xl md:text-4xl font-light tracking-tight">NEW ARRIVALS</h2>
         </div>
-      </section>
+        <a href="#all" className="text-xs tracking-widest border-b border-black pb-1 hover:opacity-60 transition-opacity">
+          VIEW ALL
+        </a>
+      </div>
 
-      {/* Laboratory Section */}
-      <section id="laboratory" className="py-20 md:py-32 px-4 md:px-8 border-t border-gray-900">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+        {products.map((product, index) => (
+          <ProductCard key={product.id} product={product} index={index} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// Editorial Section
+const EditorialSection = () => {
+  return (
+    <section className="py-20 md:py-32 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-6 md:px-12">
+        <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
             viewport={{ once: true }}
+            className="order-2 md:order-1"
           >
-            <h2 className="font-sans text-4xl md:text-6xl font-bold tracking-tight mb-6">LABORATORY</h2>
-            <p className="font-mono text-sm text-gray-400 mb-6 leading-relaxed">
-              Каждый предмет создается как инженерный объект. Мы используем промышленные материалы
-              и методы производства, применяемые в аэрокосмической отрасли.
+            <p className="text-xs tracking-widest text-gray-500 mb-4">THE PHILOSOPHY</p>
+            <h2 className="text-3xl md:text-5xl font-light tracking-tight mb-6 leading-tight">
+              INDUSTRIAL ELEGANCE
+            </h2>
+            <p className="text-gray-600 leading-relaxed mb-8 font-light">
+              Founded in 2017 by brothers Julius and Victor Juul, HELIOT EMIL merges industrial
+              aesthetics with high-fashion sensibilities. Each piece is a study in form and function,
+              utilizing technical fabrics and architectural silhouettes to create a uniform for the future.
             </p>
-            <div className="space-y-4 font-mono text-xs text-gray-500">
-              <div className="flex justify-between border-b border-gray-800 pb-2">
-                <span>PROCESS</span>
-                <span>ADDITIVE_MANUFACTURING</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-800 pb-2">
-                <span>MATERIALS</span>
-                <span>CARBON_FIBER / TITANIUM</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-800 pb-2">
-                <span>ORIGIN</span>
-                <span>BERLIN_DE</span>
-              </div>
+            <button className="group flex items-center gap-3 text-xs tracking-widest border-b border-black pb-2 hover:opacity-60 transition-opacity">
+              READ OUR STORY
+              <SafeIcon name="arrow-right" size={14} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="order-1 md:order-2"
+          >
+            <div className="aspect-[4/5] overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1552374196-1ab2a1c59342?w=800&q=80"
+                alt="Editorial"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+              />
             </div>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="relative h-96 border border-gray-800 overflow-hidden"
-          >
-            <div className="absolute inset-0 liquid-bg opacity-50" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="font-mono text-xs text-gray-500 text-center">
-                <div className="mb-2">RENDER_001</div>
-                <div className="w-32 h-32 border border-gray-700 rounded-full animate-pulse" />
-              </div>
-            </div>
-          </motion.div>
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* Contact Section */}
-      <section id="contact" className="py-20 md:py-32 px-4 md:px-8 border-t border-gray-900">
-        <div className="max-w-7xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="font-sans text-4xl md:text-6xl font-bold tracking-tight mb-6">ESTABLISH CONNECTION</h2>
-            <p className="font-mono text-sm text-gray-400 mb-12 max-w-md mx-auto">
-              Для запросов о доступе к эксклюзивным материалам и коллекциям
-            </p>
+// Lookbook Section
+const LookbookSection = () => {
+  return (
+    <section className="py-20 md:py-32 px-6 md:px-12 max-w-7xl mx-auto">
+      <div className="text-center mb-16">
+        <p className="text-xs tracking-widest text-gray-500 mb-2">CAMPAIGN</p>
+        <h2 className="text-3xl md:text-4xl font-light tracking-tight">SS25 LOOKBOOK</h2>
+      </div>
 
-            <form className="max-w-md mx-auto space-y-4" onSubmit={(e) => { e.preventDefault(); playClick(); }}>
-              <input
-                type="email"
-                placeholder="ENTER_EMAIL_ADDRESS"
-                className="w-full bg-transparent border border-gray-800 p-4 font-mono text-sm text-[#EBEBEB] placeholder-gray-600 focus:border-[#EBEBEB] outline-none transition-colors"
-              />
-              <button
-                type="submit"
-                className="w-full bg-[#EBEBEB] text-[#050505] py-4 font-mono text-sm font-bold hover:bg-gray-300 transition-colors"
-                data-cursor-hover
-              >
-                TRANSMIT
-              </button>
-            </form>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 md:px-8 border-t border-gray-900">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="font-sans text-xl font-bold tracking-tighter">MNLT</div>
-          <div className="font-mono text-[10px] text-gray-600 text-center md:text-right">
-            <div>© 2026 MONOLITH INDUSTRIES</div>
-            <div>ALL RIGHTS RESERVED // SYSTEM_VER_2.0.4</div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Product Modal */}
-      <AnimatePresence>
-        {selectedProduct && (
-          <ProductModal
-            product={selectedProduct}
-            onClose={() => setSelectedProduct(null)}
-            playClick={playClick}
+      <div className="grid md:grid-cols-3 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="aspect-[3/4] overflow-hidden"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=80"
+            alt="Look 1"
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
           />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          viewport={{ once: true }}
+          className="aspect-[3/4] overflow-hidden"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1529139574466-a303027c1d4b?w=600&q=80"
+            alt="Look 2"
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="aspect-[3/4] overflow-hidden"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80"
+            alt="Look 3"
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+          />
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+// Newsletter Section
+const Newsletter = () => {
+  return (
+    <section className="py-20 md:py-32 border-t border-gray-200">
+      <div className="max-w-md mx-auto text-center px-6">
+        <h2 className="text-2xl font-light tracking-tight mb-4">JOIN THE NEWSLETTER</h2>
+        <p className="text-sm text-gray-500 mb-8 font-light">
+          Be the first to know about new collections and exclusive offers.
+        </p>
+        <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
+          <input
+            type="email"
+            placeholder="Enter your email"
+            className="w-full px-4 py-3 border border-gray-300 text-sm tracking-wide focus:outline-none focus:border-black transition-colors"
+          />
+          <button
+            type="submit"
+            className="w-full bg-black text-white py-3 text-xs tracking-widest font-medium hover:bg-gray-800 transition-colors"
+          >
+            SUBSCRIBE
+          </button>
+        </form>
+      </div>
+    </section>
+  )
+}
+
+// Footer
+const Footer = () => {
+  return (
+    <footer className="bg-black text-white py-16 md:py-20 px-6 md:px-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-4 gap-12 mb-16">
+          {/* Brand */}
+          <div className="md:col-span-1">
+            <h3 className="text-lg font-semibold tracking-[0.2em] mb-4">HELIOT EMIL</h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Industrial elegance meets fluid forms. Copenhagen-based contemporary fashion house.
+            </p>
+          </div>
+
+          {/* Shop */}
+          <div>
+            <h4 className="text-xs tracking-widest mb-4 text-gray-400">SHOP</h4>
+            <ul className="space-y-2 text-sm font-light">
+              <li><a href="#" className="hover:text-gray-400 transition-colors">New Arrivals</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Outerwear</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Tailoring</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Accessories</a></li>
+            </ul>
+          </div>
+
+          {/* Info */}
+          <div>
+            <h4 className="text-xs tracking-widest mb-4 text-gray-400">INFORMATION</h4>
+            <ul className="space-y-2 text-sm font-light">
+              <li><a href="#" className="hover:text-gray-400 transition-colors">About Us</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Contact</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Shipping</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Returns</a></li>
+            </ul>
+          </div>
+
+          {/* Social */}
+          <div>
+            <h4 className="text-xs tracking-widest mb-4 text-gray-400">FOLLOW</h4>
+            <ul className="space-y-2 text-sm font-light">
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Instagram</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">TikTok</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">YouTube</a></li>
+              <li><a href="#" className="hover:text-gray-400 transition-colors">Spotify</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-[10px] text-gray-500 tracking-widest">
+            © 2025 HELIOT EMIL. ALL RIGHTS RESERVED.
+          </p>
+          <div className="flex gap-6 text-[10px] text-gray-500 tracking-widest">
+            <a href="#" className="hover:text-white transition-colors">PRIVACY POLICY</a>
+            <a href="#" className="hover:text-white transition-colors">TERMS OF SERVICE</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+// Main App
+function App() {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Simulate loading
+    const timer = setTimeout(() => setLoading(false), 500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-white text-black font-sans">
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-[100] bg-white flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="text-center"
+            >
+              <h1 className="text-2xl font-semibold tracking-[0.3em] mb-2">HELIOT EMIL</h1>
+              <p className="text-xs text-gray-400 tracking-widest">LOADING</p>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
+
+      <Navigation menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+
+      <main>
+        <Hero />
+        <CollectionGrid />
+        <EditorialSection />
+        <LookbookSection />
+        <Newsletter />
+      </main>
+
+      <Footer />
     </div>
   )
 }
